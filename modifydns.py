@@ -31,13 +31,14 @@ class ModifyDNS(object):
 
     TTL = 86400
 
-    def __init__(self,  # pylint: disable=too-many-arguments
-                 nameserver=None,
-                 forward_zone=None,
-                 reverse_zone=None,
-                 ttl=None,
-                 key_name=None,
-                 key_hash=None):
+    def __init__(
+            self,  # pylint: disable=too-many-arguments
+            nameserver=None,
+            forward_zone=None,
+            reverse_zone=None,
+            ttl=None,
+            key_name=None,
+            key_hash=None):
         self.nameserver = nameserver
         self.forward_zone = forward_zone
         self.reverse_zone = reverse_zone
@@ -101,7 +102,6 @@ class ModifyDNS(object):
         for addr in address:
             result.append(self.add_forward(name, addr))
         return result
-        
 
     def add_reverse(self, address, name):
         """
@@ -137,6 +137,9 @@ class ModifyDNS(object):
         return result
 
     def delete_forward(self, name):
+        """
+        Delete an A record. This will also remove all round-robin entries for that name.
+        """
         logging.debug("Forward delete request for %s", name)
         shortname, zone = self.__get_name_and_zone(name)
         update = dns.update.Update(zone, keyring=self.keyring)
@@ -146,6 +149,9 @@ class ModifyDNS(object):
         return result
 
     def delete_reverse(self, address):
+        """
+        Delete a PTR record.
+        """
         logging.debug("Reverse delete request for %s", address)
         reverse_name, zone = self.__get_rev_name_and_zone(address)
         update = dns.update.Update(zone, keyring=self.keyring)
@@ -155,13 +161,17 @@ class ModifyDNS(object):
         return result
 
     def delete_alias(self, alias):
+        """
+        Delete a CNAME record
+        """
         logging.debug("Alias delete request for %s", alias)
         shortname, zone = self.__get_name_and_zone(alias)
-        update = dns.update.Update(zone, keyring=self.keying)
+        update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(shortname, dns.rdatatype.CNAME)
         result = dns.query.tcp(update, self.nameserver)
         logging.debug("Deleting alias record result: %s", result)
         return result
+
 
 def parse_key_file(kfile):
     """
@@ -178,7 +188,8 @@ def parse_key_file(kfile):
             key_hash = key_hash_result.group(1).rstrip()
     return (key_name, key_hash)
 
-def main():
+
+def main():  # pylint: disable=too-many-branches
     """
     ModifyDNS
 
@@ -239,17 +250,20 @@ def main():
     try:
         if arguments['add_forward']:
             address = address.pop(0)
-            logging.debug("Request to add forward entry for %s %s", name, address)
+            logging.debug("Request to add forward entry for %s %s", name,
+                          address)
             result.append(modifier.add_forward(name, address))
         if arguments['add_reverse']:
             address = address.pop(0)
-            logging.debug("Request to add reverse entry for %s %s", address, name)
+            logging.debug("Request to add reverse entry for %s %s", address,
+                          name)
             result.append(modifier.add_reverse(address, name))
         if arguments['add_alias']:
             logging.debug("Request to add alias for %s %s", alias, name)
             result.append(modifier.add_alias(alias, name))
         if arguments['add_rr']:
-            logging.debug("Request to add round-robin for %s %s", name, address)
+            logging.debug("Request to add round-robin for %s %s", name,
+                          address)
             result.extend(modifier.add_rr(name, address))
         if arguments['delete_forward']:
             logging.debug("Request to delete forward entry %s", name)
