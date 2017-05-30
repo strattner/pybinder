@@ -1,5 +1,8 @@
 ## pybinder
-A collection of Python scripts that enable management of DNS (BIND) using DDNS (RFC 2136)
+A collection of Python scripts that enable management of DNS (BIND) using DDNS (RFC 2136). Uses the **dnspython** toolkit.
+
+Required modules
+[dnspython](http://www.dnspython.org/)
 
 ## searchdns.py
 Will perform a search of one or more records (by name or IP), to the nameserver specified (or use system default).
