@@ -18,10 +18,72 @@ import dns.update
 import dns.rdatatype
 import dns.reversename
 from docopt import docopt
+from searchdns import SearchDNS, DNSSearchAnswer
 
 
 class DNSModifyError(Exception):  # pylint: disable=missing-docstring
     NO_ZONE = "No zone specififed"
+
+
+class DNSModifyRequest(object):  # pylint: disable=too-few-public-methods
+    """
+    Encapsulates a DNS request. Should include the value, even if it is
+    a delete request, so that the action can be undone if needed.
+    """
+
+    ADD = "Add"
+    DELETE = "Delete"
+    ACTIONS = [ADD, DELETE]
+
+    def __init__(self, action, rtype, entry, value):
+        self.action = action if action in self.ACTIONS else None
+        self.rtype = rtype
+        self.entry = entry
+        self.value = value
+
+    def __str__(self):
+        return_string = "Action: {} {} record for entry {}".format(self.action,
+                                                                   self.rtype, self.entry)
+        return return_string
+
+    def reverse_request(self):
+        """
+        To support an undo operation, reverse the request and create a
+        new DNSModifyRequest instance.
+        """
+        if not self.action:
+            return None
+        if self.action == self.ADD:
+            return DNSModifyRequest(self.DELETE, self.rtype, self.entry, self.value)
+        return DNSModifyRequest(self.ADD, self.rtype, self.entry, self.value)
+
+
+class DNSModifyAnswer(object):  # pylint: disable=too-few-public-methods
+    """
+    Provides a simple interface to dns.message.Message, which
+    is returned when performing an add/delete call to DNS.
+    """
+
+    # The return codes come from BIND, except for 99, which is used when
+    # a delete request is made for an entry that does not exist in DNS.
+
+    CANCEL_REQUEST = 99
+
+    RETURN_CODE = {0: "completed successfully",
+                   2: "failed with a server failure",
+                   3: "failed as domain was not found",
+                   5: "failed as request was refused",
+                   9: "failed as not authorized to perform the request",
+                   10: "failed as improper zone was given",
+                   CANCEL_REQUEST: "canceled as entry does not exist"}
+
+    def __init__(self, request, dns_message):
+        self.request = request
+        self.rcode = dns_message
+
+    def __str__(self):
+        return_string = self.request + ": " + self.RETURN_CODE[self.rcode]
+        return return_string
 
 
 class ModifyDNS(object):
@@ -31,8 +93,8 @@ class ModifyDNS(object):
 
     TTL = 86400
 
-    def __init__(
-            self,  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments
+            self,
             nameserver=None,
             forward_zone=None,
             reverse_zone=None,
@@ -42,6 +104,8 @@ class ModifyDNS(object):
         self.nameserver = nameserver
         self.forward_zone = forward_zone
         self.reverse_zone = reverse_zone
+        self.forward_search = SearchDNS(self.nameserver, self.forward_zone)
+        self.reverse_search = SearchDNS(self.nameserver, self.reverse_zone)
         self.ttl = ttl if ttl else self.TTL
         if key_name and key_hash:
             self.keyring = dns.tsigkeyring.from_text({key_name: key_hash})
@@ -75,7 +139,6 @@ class ModifyDNS(object):
                     dns.reversename.from_address(str(network_address)))
                 last_octet_index = rev_network_addr.find('.')
                 zone = rev_network_addr[last_octet_index:]
-                print(zone)
             except ValueError:
                 logging.debug("Unable to find reverse zone for %s", address)
                 raise DNSModifyError(DNSModifyError.NO_ZONE)
@@ -85,28 +148,28 @@ class ModifyDNS(object):
         """
         Create A record. Does not check if name is already in use.
         Does not verify that address is an actual IP address.
+        Because round-robin entries are supported, returns an array
+        of DNSModifyAnswers.
         """
+        answer = []
         logging.debug("Forward add request for %s %s", name, address)
         shortname, zone = self.__get_name_and_zone(name)
         update = dns.update.Update(zone, keyring=self.keyring)
-        update.add(shortname, self.ttl, dns.rdatatype.A, address)
-        result = dns.query.tcp(update, self.nameserver)
-        logging.debug("Adding forward record result: %s", result)
-        return result
-
-    def add_rr(self, name, address):
-        """
-        Round-robin record is just multiple A records with same name.
-        """
-        result = []
+        if not isinstance(address, list):
+            address = [address]
         for addr in address:
-            result.append(self.add_forward(name, addr))
-        return result
+            request = DNSModifyRequest(DNSModifyRequest.ADD, dns.rdatatype.A, name, addr)
+            update.add(shortname, self.ttl, dns.rdatatype.A, addr)
+            result = dns.query.tcp(update, self.nameserver)
+            logging.debug("Adding forward record result: %s", result)
+            answer.append(DNSModifyAnswer(request, result.rcode()))
+        return answer
 
     def add_reverse(self, address, name):
         """
         Create PTR record. Does not check if address is already in use.
         """
+        request = DNSModifyRequest(DNSModifyRequest.ADD, dns.rdatatype.PTR, address, name)
         logging.debug("Reverse add request for %s %s", address, name)
         reverse_name, zone = self.__get_rev_name_and_zone(address)
         shortname, fzone = self.__get_name_and_zone(name)
@@ -117,13 +180,14 @@ class ModifyDNS(object):
         update.add(reverse_name, self.ttl, dns.rdatatype.PTR, fqdn)
         result = dns.query.tcp(update, self.nameserver)
         logging.debug("Adding reverse record result: %s", result)
-        return result
+        return DNSModifyAnswer(request, result.rcode())
 
     def add_alias(self, cname, rname):
         """
         Create CNAME record. Does not check if cname is already in use, or if
         rname exists.
         """
+        request = DNSModifyRequest(DNSModifyRequest.ADD, dns.rdatatype.CNAME, cname, rname)
         logging.debug("Alias add request for %s pointing to %s", cname, rname)
         cshort, czone = self.__get_name_and_zone(cname)
         rshort, rzone = self.__get_name_and_zone(rname)
@@ -134,43 +198,62 @@ class ModifyDNS(object):
         update.add(cshort, self.ttl, dns.rdatatype.CNAME, rfqdn)
         result = dns.query.tcp(update, self.nameserver)
         logging.debug("Adding alias record result: %s", result)
-        return result
+        return DNSModifyAnswer(request, result.rcode())
 
     def delete_forward(self, name):
         """
         Delete an A record. This will also remove all round-robin entries for that name.
         """
-        logging.debug("Forward delete request for %s", name)
+        existing = self.forward_search.query(name, dns.rdatatype.A)
+        if existing.type == DNSSearchAnswer.NOT_FOUND:
+            request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.A, name, None)
+            return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
+        request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.A, name, existing.addr)
+        logging.debug("Forward delete request for %s with existing value %s", name, existing.addr)
         shortname, zone = self.__get_name_and_zone(name)
         update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(shortname, dns.rdatatype.A)
         result = dns.query.tcp(update, self.nameserver)
         logging.debug("Deleting forward record result: %s", result)
-        return result
+        return DNSModifyAnswer(request, result.rcode())
 
     def delete_reverse(self, address):
         """
         Delete a PTR record.
         """
-        logging.debug("Reverse delete request for %s", address)
+        existing = self.reverse_search.query(address, dns.rdatatype.PTR)
+        if existing.type == DNSSearchAnswer.NOT_FOUND:
+            request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.PTR, address, None)
+            return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
+        request = DNSModifyRequest(DNSModifyRequest.DELETE,
+                                   dns.rdatatype.PTR, address, existing.name)
+        logging.debug("Reverse delete request for %s with existing value %s",
+                      address, existing.name)
         reverse_name, zone = self.__get_rev_name_and_zone(address)
         update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(reverse_name, dns.rdatatype.PTR)
         result = dns.query.tcp(update, self.nameserver)
         logging.debug("Deleting reverse record result: %s", result)
-        return result
+        return DNSModifyAnswer(request, result.rcode())
 
     def delete_alias(self, alias):
         """
         Delete a CNAME record
         """
-        logging.debug("Alias delete request for %s", alias)
+        existing = self.forward_search.query(alias, dns.rdatatype.CNAME)
+        if not existing:
+            request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.CNAME, alias, None)
+            return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
+        request = DNSModifyRequest(DNSModifyRequest.DELETE,
+                                   dns.rdatatype.CNAME, alias, existing.real_name)
+        logging.debug("Alias delete request for %s with existing value %s",
+                      alias, existing.real_name)
         shortname, zone = self.__get_name_and_zone(alias)
         update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(shortname, dns.rdatatype.CNAME)
         result = dns.query.tcp(update, self.nameserver)
         logging.debug("Deleting alias record result: %s", result)
-        return result
+        return DNSModifyAnswer(request, result)
 
 
 def parse_key_file(kfile):
@@ -195,13 +278,11 @@ def main():  # pylint: disable=too-many-branches
 
     Usage:
         modifydns.py add_forward [--debug <dfile>] [--server <server>] [--key <kfile>]
-                                 [--zone <zone>] <name> <address>
+                                 [--zone <zone>] <name> <address>...
         modifydns.py add_reverse [--debug <dfile>] [--server <server>] [--key <kfile>]
                                  [--zone <zone>] <address> <name>
         modifydns.py add_alias [--debug <dfile>] [--server <server>] [--key <kfile>]
                                [--zone <zone>] <alias> <name>
-        modifydns.py add_rr [--debug <dfile>] [--server <server>] [--key <kfile>]
-                            [--zone <zone>] <name> <address>...
         modifydns.py delete_forward [--debug <dfile>] [--server <server>] [--key <kfile>]
                                  [--zone <zone>] <name>
         modifydns.py delete_reverse [--debug <dfile>] [--server <server>] [--key <kfile>]
@@ -223,7 +304,7 @@ def main():  # pylint: disable=too-many-branches
         --zone <zone>      Forward or reverse zone, if overriding name/address zone
     """
     arguments = docopt(str(main.__doc__))
-    if '--debug' in arguments:
+    if arguments['--debug']:
         print("Running in debug mode to {}".format(arguments['--debug']))
         log_date = '%Y-%m-%d %H:%M:%S'
         log_form = '%(asctime)s %(message)s'
@@ -238,7 +319,7 @@ def main():  # pylint: disable=too-many-branches
     name = arguments['<name>']
     address = arguments['<address>']
     alias = arguments['<alias>']
-    if '--key' in arguments:
+    if arguments['--key']:
         (key_name, key_hash) = parse_key_file(arguments['--key'])
     else:
         key_name = key_hash = None
@@ -249,10 +330,9 @@ def main():  # pylint: disable=too-many-branches
     result = []
     try:
         if arguments['add_forward']:
-            address = address.pop(0)
             logging.debug("Request to add forward entry for %s %s", name,
                           address)
-            result.append(modifier.add_forward(name, address))
+            result.extend(modifier.add_forward(name, address))
         if arguments['add_reverse']:
             address = address.pop(0)
             logging.debug("Request to add reverse entry for %s %s", address,
@@ -261,10 +341,6 @@ def main():  # pylint: disable=too-many-branches
         if arguments['add_alias']:
             logging.debug("Request to add alias for %s %s", alias, name)
             result.append(modifier.add_alias(alias, name))
-        if arguments['add_rr']:
-            logging.debug("Request to add round-robin for %s %s", name,
-                          address)
-            result.extend(modifier.add_rr(name, address))
         if arguments['delete_forward']:
             logging.debug("Request to delete forward entry %s", name)
             result.append(modifier.delete_forward(name))
