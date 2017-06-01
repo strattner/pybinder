@@ -41,8 +41,8 @@ class DNSSearchAnswer(object):  # pylint: disable=too-few-public-methods
         self.entry = entry
         if not value:
             self.type = DNSSearchAnswer.NOT_FOUND
-            return None
-        self.__parse_answer(value)
+        else:
+            self.__parse_answer(value)
 
     def __parse_answer(self, answer):
         first_result = str(answer.pop(0))
@@ -120,13 +120,13 @@ class SearchDNS(object):
 
     def query(self, entry, search_type=None):  # pylint: disable=missing-docstring
         logging.debug("Performing a search for %s", entry)
+        search_entry = entry
         if not search_type:
             if SearchDNS.is_address(entry):
                 search_type = SearchDNS.REVERSE
                 search_entry = dns.reversename.from_address(entry)
             else:
                 search_type = SearchDNS.FORWARD
-                search_entry = entry
         try:
             answer = self.searcher.query(search_entry, search_type).response
             answer_list = str(answer.answer.pop(0)).splitlines()

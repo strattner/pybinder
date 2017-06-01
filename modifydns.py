@@ -42,8 +42,10 @@ class DNSModifyRequest(object):  # pylint: disable=too-few-public-methods
         self.value = value
 
     def __str__(self):
-        return_string = "Action: {} {} record for entry {}".format(self.action,
-                                                                   self.rtype, self.entry)
+        return_string = "{} {} record for entry {}".format(self.action,
+                                                                   dns.rdatatype.to_text(self.rtype), self.entry)
+        if self.value:
+            return_string += " with value {}".format(self.value)
         return return_string
 
     def reverse_request(self):
@@ -82,7 +84,7 @@ class DNSModifyAnswer(object):  # pylint: disable=too-few-public-methods
         self.rcode = dns_message
 
     def __str__(self):
-        return_string = self.request + ": " + self.RETURN_CODE[self.rcode]
+        return_string = str(self.request) + ": " + self.RETURN_CODE[self.rcode]
         return return_string
 
 
@@ -204,7 +206,7 @@ class ModifyDNS(object):
         """
         Delete an A record. This will also remove all round-robin entries for that name.
         """
-        existing = self.forward_search.query(name, dns.rdatatype.A)
+        existing = self.forward_search.query(name)
         if existing.type == DNSSearchAnswer.NOT_FOUND:
             request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.A, name, None)
             return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
@@ -221,7 +223,7 @@ class ModifyDNS(object):
         """
         Delete a PTR record.
         """
-        existing = self.reverse_search.query(address, dns.rdatatype.PTR)
+        existing = self.reverse_search.query(address)
         if existing.type == DNSSearchAnswer.NOT_FOUND:
             request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.PTR, address, None)
             return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
@@ -240,8 +242,8 @@ class ModifyDNS(object):
         """
         Delete a CNAME record
         """
-        existing = self.forward_search.query(alias, dns.rdatatype.CNAME)
-        if not existing:
+        existing = self.forward_search.query(alias, SearchDNS.ALIAS)
+        if existing.type == DNSSearchAnswer.NOT_FOUND:
             request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.CNAME, alias, None)
             return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
         request = DNSModifyRequest(DNSModifyRequest.DELETE,
@@ -253,7 +255,7 @@ class ModifyDNS(object):
         update.delete(shortname, dns.rdatatype.CNAME)
         result = dns.query.tcp(update, self.nameserver)
         logging.debug("Deleting alias record result: %s", result)
-        return DNSModifyAnswer(request, result)
+        return DNSModifyAnswer(request, result.rcode())
 
 
 def parse_key_file(kfile):
@@ -305,7 +307,6 @@ def main():  # pylint: disable=too-many-branches
     """
     arguments = docopt(str(main.__doc__))
     if arguments['--debug']:
-        print("Running in debug mode to {}".format(arguments['--debug']))
         log_date = '%Y-%m-%d %H:%M:%S'
         log_form = '%(asctime)s %(message)s'
         logging.basicConfig(
