@@ -15,7 +15,6 @@ Author: Scott Strattner (sstrattn@us.ibm.com)
 import re
 import logging
 import ipaddress
-from docopt import docopt
 from modifydns import ModifyDNS, parse_key_file
 from searchdns import DNSSearchAnswer
 
@@ -128,6 +127,17 @@ class ManageDNS(ModifyDNS):
             results.extend(self.__delete_or_raise(current_name, current_ip, force))
         return results
 
+    def add_record(self, name, address, force=False):
+        """
+        Adds the A and PTR records - deleting any existing entries, if force is True.
+        """
+        shortname, zone = self._get_name_and_zone(name)
+        result = []
+        result.extend(self.__delete_or_raise(shortname + '.' + zone, address, force))
+        result.append(self.add_forward(name, address))
+        result.append(self.add_reverse(address, name + '.' + zone))
+        return result
+
     def add_range(self, name, start_address, number, index=None, force=False):  # pylint: disable=too-many-arguments
         """
         Index, if given, should be a string, so that the number of required digits (ie, zero
@@ -146,7 +156,7 @@ class ManageDNS(ModifyDNS):
         for current_name, current_address in self.__range_iterator(shortname, start_address,
                                                                    number, index):
             result.append(self.add_forward(current_name, current_address))
-            result.append(self.add_reverse(current_address, current_name + zone))
+            result.append(self.add_reverse(current_address, current_name + '.' + zone))
         return result
 
 
@@ -208,4 +218,5 @@ def main():  # pylint: disable=too-many-locals
     print(results)
 
 if __name__ == "__main__":
+    from docopt import docopt
     main()

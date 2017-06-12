@@ -17,7 +17,6 @@ import ipaddress
 import dns.resolver
 import dns.name
 import dns.reversename
-from docopt import docopt
 
 
 class DNSSearchAnswerError(Exception):  # pylint: disable=missing-docstring
@@ -173,4 +172,5 @@ def main():
 
 
 if __name__ == "__main__":
+    from docopt import docopt
     main()

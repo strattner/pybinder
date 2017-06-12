@@ -17,7 +17,6 @@ import dns.tsigkeyring
 import dns.update
 import dns.rdatatype
 import dns.reversename
-from docopt import docopt
 from searchdns import SearchDNS, DNSSearchAnswer
 
 
@@ -359,4 +358,5 @@ def main():  # pylint: disable=too-many-branches
 
 
 if __name__ == "__main__":
+    from docopt import docopt
     main()

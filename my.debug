@@ -169,3 +169,20 @@ flags QR RA
 ;PREREQ
 ;UPDATE
 ;ADDITIONAL
+2017-06-12 14:01:23 Program arguments: {'--debug': 'my.debug',
+ '--domain': 'pbm.ihost.com',
+ '--help': False,
+ '--server': '129.40.40.21',
+ '<query>': ['scott002', 'scott003']}
+2017-06-12 14:01:23 Using 129.40.40.21 as nameserver
+2017-06-12 14:01:23 Using pbm.ihost.com as default domain
+2017-06-12 14:01:23 Performing a search for scott002
+2017-06-12 14:01:23 Answer: ['scott002.pbm.ihost.com. 3000 IN A 129.40.99.13']
+2017-06-12 14:01:23 Inserting DNSSearchAnswer scott002 ['scott002.pbm.ihost.com. 3000 IN A 129.40.99.13']
+2017-06-12 14:01:23 Parsing first result: scott002.pbm.ihost.com. 3000 IN A 129.40.99.13
+2017-06-12 14:01:23 Result type A with value 129.40.99.13
+2017-06-12 14:01:23 Performing a search for scott003
+2017-06-12 14:01:23 Answer: ['scott003.pbm.ihost.com. 3000 IN A 129.40.99.14']
+2017-06-12 14:01:23 Inserting DNSSearchAnswer scott003 ['scott003.pbm.ihost.com. 3000 IN A 129.40.99.14']
+2017-06-12 14:01:23 Parsing first result: scott003.pbm.ihost.com. 3000 IN A 129.40.99.14
+2017-06-12 14:01:23 Result type A with value 129.40.99.14
