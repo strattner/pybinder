@@ -5,11 +5,11 @@ Built and tested using Python 3.5.2
 
 Required modules (\* - part of standard library)
 
-[dnspython](http://www.dnspython.org/)  *Does the heavy lifting in interacting with BIND*
-[docopt](https://github.com/docopt/docopt)  *Creates command line parser out of the program's comments; only needed if calling program directly*
-\* [ipaddress](https://docs.python.org/3/library/ipaddress.html)
-\* [logging](https://docs.python.org/3/library/logging.html)
-\* [re](https://docs.python.org/3/library/re.html)
+[dnspython](http://www.dnspython.org/)  *Does the heavy lifting in interacting with BIND*   
+[docopt](https://github.com/docopt/docopt)  *Creates command line parser out of the program's comments; only needed if calling program directly*   
+\* [ipaddress](https://docs.python.org/3/library/ipaddress.html)    
+\* [logging](https://docs.python.org/3/library/logging.html)   
+\* [re](https://docs.python.org/3/library/re.html)   
 
 ## searchdns.py
 Will perform a search of one or more records (by name or IP), to the nameserver specified (or use system default).
