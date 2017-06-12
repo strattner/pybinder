@@ -299,8 +299,8 @@ def main():  # pylint: disable=too-many-branches
         alias       FQDN or shortname (if zone can be determined)
 
     Options:
-        -h --help        Show this screen
-        --debug <file>     Send debug logs to file
+        -h --help          Show this screen
+        --debug <dfile>    Send debug logs to file
         --server <server>  Specify nameserver, if different from system default
         --key <kfile>      The TSIG key file containing name and hash
         --zone <zone>      Forward or reverse zone, if overriding name/address zone
