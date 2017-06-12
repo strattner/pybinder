@@ -42,8 +42,8 @@ class DNSModifyRequest(object):  # pylint: disable=too-few-public-methods
         self.value = value
 
     def __str__(self):
-        return_string = "{} {} record for entry {}".format(self.action,
-                                                                   dns.rdatatype.to_text(self.rtype), self.entry)
+        fmt_str = "{} {} record for entry {}"
+        return_string = fmt_str.format(self.action, dns.rdatatype.to_text(self.rtype), self.entry)
         if self.value:
             return_string += " with value {}".format(self.value)
         return return_string
@@ -118,7 +118,7 @@ class ModifyDNS(object):
     def __print_attributes(self):
         logging.debug("%s", self.__dict__)
 
-    def __get_name_and_zone(self, name):
+    def _get_name_and_zone(self, name):
         if '.' in name:
             (shortname, zone) = name.split('.', 1)
         else:
@@ -155,7 +155,7 @@ class ModifyDNS(object):
         """
         answer = []
         logging.debug("Forward add request for %s %s", name, address)
-        shortname, zone = self.__get_name_and_zone(name)
+        shortname, zone = self._get_name_and_zone(name)
         update = dns.update.Update(zone, keyring=self.keyring)
         if not isinstance(address, list):
             address = [address]
@@ -174,7 +174,7 @@ class ModifyDNS(object):
         request = DNSModifyRequest(DNSModifyRequest.ADD, dns.rdatatype.PTR, address, name)
         logging.debug("Reverse add request for %s %s", address, name)
         reverse_name, zone = self.__get_rev_name_and_zone(address)
-        shortname, fzone = self.__get_name_and_zone(name)
+        shortname, fzone = self._get_name_and_zone(name)
         fqdn = shortname + '.' + fzone
         if not fqdn.endswith('.'):
             fqdn += '.'
@@ -191,8 +191,8 @@ class ModifyDNS(object):
         """
         request = DNSModifyRequest(DNSModifyRequest.ADD, dns.rdatatype.CNAME, cname, rname)
         logging.debug("Alias add request for %s pointing to %s", cname, rname)
-        cshort, czone = self.__get_name_and_zone(cname)
-        rshort, rzone = self.__get_name_and_zone(rname)
+        cshort, czone = self._get_name_and_zone(cname)
+        rshort, rzone = self._get_name_and_zone(rname)
         rfqdn = rshort + '.' + rzone
         if not rfqdn.endswith('.'):
             rfqdn += '.'
@@ -212,7 +212,7 @@ class ModifyDNS(object):
             return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
         request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.A, name, existing.addr)
         logging.debug("Forward delete request for %s with existing value %s", name, existing.addr)
-        shortname, zone = self.__get_name_and_zone(name)
+        shortname, zone = self._get_name_and_zone(name)
         update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(shortname, dns.rdatatype.A)
         result = dns.query.tcp(update, self.nameserver)
@@ -250,7 +250,7 @@ class ModifyDNS(object):
                                    dns.rdatatype.CNAME, alias, existing.real_name)
         logging.debug("Alias delete request for %s with existing value %s",
                       alias, existing.real_name)
-        shortname, zone = self.__get_name_and_zone(alias)
+        shortname, zone = self._get_name_and_zone(alias)
         update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(shortname, dns.rdatatype.CNAME)
         result = dns.query.tcp(update, self.nameserver)

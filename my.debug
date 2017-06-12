@@ -1,0 +1,171 @@
+2017-06-12 12:07:01 Arguments: {'--debug': 'my.debug',
+ '--force': False,
+ '--fzone': 'pbm.ihost.com',
+ '--help': False,
+ '--key': 'ddns-test.key',
+ '--rzone': '40.129.in-addr.arpa',
+ '--server': '129.40.40.21',
+ '<index>': '002',
+ '<num>': '5',
+ '<start_address>': '129.40.99.13',
+ '<start_name>': 'scott',
+ 'add_range': True}
+2017-06-12 12:07:25 Arguments: {'--debug': 'my.debug',
+ '--force': False,
+ '--fzone': 'pbm.ihost.com',
+ '--help': False,
+ '--key': 'ddns-test.key',
+ '--rzone': '40.129.in-addr.arpa',
+ '--server': '129.40.40.21',
+ '<index>': '002',
+ '<num>': '5',
+ '<start_address>': '129.40.99.13',
+ '<start_name>': 'scott',
+ 'add_range': True}
+2017-06-12 12:07:25 Using 129.40.40.21 as nameserver
+2017-06-12 12:07:25 Using pbm.ihost.com as default domain
+2017-06-12 12:07:25 Using 129.40.40.21 as nameserver
+2017-06-12 12:07:25 Using 40.129.in-addr.arpa as default domain
+2017-06-12 12:07:25 {'nameserver': '129.40.40.21', 'reverse_zone': '40.129.in-addr.arpa', 'keyring': {<DNS name ddns-test.>: b'\x83\x01\xf3~\x87\xe2\x89"^\x87\xe7\x18N_\xe7P\xa3"\xf0L\xc7Zi\xc2\xfb\x15t#\x01\xbe\x10\xa1u,\xef\xc1N\xe6\x7fo \xe3\xb1\xc4\xfd\x85{1\xb9\x08\xf2\n\x9c\xa2Y\x90\x98\xbf\xb3\xf10\x8d;%'}, 'forward_search': <searchdns.SearchDNS object at 0x3fffa7d24080>, 'ttl': 3000, 'forward_zone': 'pbm.ihost.com', 'reverse_search': <searchdns.SearchDNS object at 0x3fffa7b6b978>}
+2017-06-12 13:03:31 Arguments: {'--debug': 'my.debug',
+ '--force': False,
+ '--fzone': 'pbm.ihost.com',
+ '--help': False,
+ '--key': 'ddns-test.key',
+ '--rzone': '40.129.in-addr.arpa',
+ '--server': '129.40.40.21',
+ '<index>': '002',
+ '<num>': '5',
+ '<start_address>': '129.40.99.13',
+ '<start_name>': 'scott',
+ 'add_range': True}
+2017-06-12 13:03:31 Using 129.40.40.21 as nameserver
+2017-06-12 13:03:31 Using pbm.ihost.com as default domain
+2017-06-12 13:03:31 Using 129.40.40.21 as nameserver
+2017-06-12 13:03:31 Using 40.129.in-addr.arpa as default domain
+2017-06-12 13:03:31 {'ttl': 3000, 'forward_zone': 'pbm.ihost.com', 'forward_search': <searchdns.SearchDNS object at 0x3fffa2284080>, 'nameserver': '129.40.40.21', 'keyring': {<DNS name ddns-test.>: b'\x83\x01\xf3~\x87\xe2\x89"^\x87\xe7\x18N_\xe7P\xa3"\xf0L\xc7Zi\xc2\xfb\x15t#\x01\xbe\x10\xa1u,\xef\xc1N\xe6\x7fo \xe3\xb1\xc4\xfd\x85{1\xb9\x08\xf2\n\x9c\xa2Y\x90\x98\xbf\xb3\xf10\x8d;%'}, 'reverse_zone': '40.129.in-addr.arpa', 'reverse_search': <searchdns.SearchDNS object at 0x3fffa201cbe0>}
+2017-06-12 13:04:08 Arguments: {'--debug': 'my.debug',
+ '--force': False,
+ '--fzone': 'pbm.ihost.com',
+ '--help': False,
+ '--key': 'ddns-test.key',
+ '--rzone': '40.129.in-addr.arpa',
+ '--server': '129.40.40.21',
+ '<index>': '002',
+ '<num>': '5',
+ '<start_address>': '129.40.99.13',
+ '<start_name>': 'scott',
+ 'add_range': True}
+2017-06-12 13:04:08 Using 129.40.40.21 as nameserver
+2017-06-12 13:04:08 Using pbm.ihost.com as default domain
+2017-06-12 13:04:08 Using 129.40.40.21 as nameserver
+2017-06-12 13:04:08 Using 40.129.in-addr.arpa as default domain
+2017-06-12 13:04:08 {'reverse_search': <searchdns.SearchDNS object at 0x3fff9a52b978>, 'forward_zone': 'pbm.ihost.com', 'ttl': 3000, 'forward_search': <searchdns.SearchDNS object at 0x3fff9a6e4080>, 'reverse_zone': '40.129.in-addr.arpa', 'nameserver': '129.40.40.21', 'keyring': {<DNS name ddns-test.>: b'\x83\x01\xf3~\x87\xe2\x89"^\x87\xe7\x18N_\xe7P\xa3"\xf0L\xc7Zi\xc2\xfb\x15t#\x01\xbe\x10\xa1u,\xef\xc1N\xe6\x7fo \xe3\xb1\xc4\xfd\x85{1\xb9\x08\xf2\n\x9c\xa2Y\x90\x98\xbf\xb3\xf10\x8d;%'}}
+2017-06-12 13:04:08 Performing a search for scott.pbm.ihost.com00000
+2017-06-12 13:04:08 Inserting DNSSearchAnswer scott.pbm.ihost.com00000 None
+2017-06-12 13:04:08 Performing a search for 129.40.99.13
+2017-06-12 13:04:08 Inserting DNSSearchAnswer 129.40.99.13 None
+2017-06-12 13:04:08 Performing a search for scott.pbm.ihost.com00001
+2017-06-12 13:04:08 Inserting DNSSearchAnswer scott.pbm.ihost.com00001 None
+2017-06-12 13:04:08 Performing a search for 129.40.99.14
+2017-06-12 13:04:08 Inserting DNSSearchAnswer 129.40.99.14 None
+2017-06-12 13:04:08 Forward add request for scott002 129.40.99.13
+2017-06-12 13:04:08 Adding forward record result: id 19269
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+pbm.ihost.com. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Reverse add request for 129.40.99.13 scott002pbm.ihost.com
+2017-06-12 13:04:08 Adding reverse record result: id 28342
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+40.129.in-addr.arpa. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Forward add request for scott003 129.40.99.14
+2017-06-12 13:04:08 Adding forward record result: id 33110
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+pbm.ihost.com. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Reverse add request for 129.40.99.14 scott003pbm.ihost.com
+2017-06-12 13:04:08 Adding reverse record result: id 53333
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+40.129.in-addr.arpa. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Forward add request for scott004 129.40.99.15
+2017-06-12 13:04:08 Adding forward record result: id 45174
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+pbm.ihost.com. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Reverse add request for 129.40.99.15 scott004pbm.ihost.com
+2017-06-12 13:04:08 Adding reverse record result: id 37432
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+40.129.in-addr.arpa. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Forward add request for scott005 129.40.99.16
+2017-06-12 13:04:08 Adding forward record result: id 59868
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+pbm.ihost.com. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Reverse add request for 129.40.99.16 scott005pbm.ihost.com
+2017-06-12 13:04:08 Adding reverse record result: id 40713
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+40.129.in-addr.arpa. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Forward add request for scott006 129.40.99.17
+2017-06-12 13:04:08 Adding forward record result: id 1683
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+pbm.ihost.com. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
+2017-06-12 13:04:08 Reverse add request for 129.40.99.17 scott006pbm.ihost.com
+2017-06-12 13:04:08 Adding reverse record result: id 48070
+opcode UPDATE
+rcode NOERROR
+flags QR RA
+;ZONE
+40.129.in-addr.arpa. IN SOA
+;PREREQ
+;UPDATE
+;ADDITIONAL
