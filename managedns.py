@@ -46,6 +46,11 @@ class ManageDNS(ModifyDNS):
             logging.debug("Setting up history for user %s", self.user)
             self.__class__.history[self.user] = []
 
+    def _add_history(self, result):
+        if self.user:
+            self.__class__.history[self.user].append(result)
+        return result
+
     def __get_name_zone_and_index(self, name):
         """
         Returns a three value tuple of the shortname, zone (if found), and the
@@ -87,7 +92,7 @@ class ManageDNS(ModifyDNS):
             raise ManageDNSError(ManageDNSError.EXISTS + entry)
         return None
 
-    def __delete_or_raise(self, name, addr=None, force=False):
+    def __delete_or_raise(self, name=None, addr=None, force=False):
         """
         Given a name and optionally an IP, determine if these values already exist
         in DNS. If they do, and force is not True, raise an EXISTS error. If force
@@ -95,10 +100,11 @@ class ManageDNS(ModifyDNS):
         """
         results = []
         existing_records = []
-        search_record = self.forward_search.query(name)
-        if not search_record.type == DNSSearchAnswer.NOT_FOUND:
-            self.__raise_if_force(name, force)
-            existing_records.append(search_record)
+        if name:
+            search_record = self.forward_search.query(name)
+            if not search_record.type == DNSSearchAnswer.NOT_FOUND:
+                self.__raise_if_force(name, force)
+                existing_records.append(search_record)
         if addr:
             address_record = self.reverse_search.query(addr)
             if not address_record.type == DNSSearchAnswer.NOT_FOUND:
@@ -135,8 +141,8 @@ class ManageDNS(ModifyDNS):
         result = []
         result.extend(self.__delete_or_raise(shortname + '.' + zone, address, force))
         result.append(self.add_forward(name, address))
-        result.append(self.add_reverse(address, name + '.' + zone))
-        return result
+        result.append(self.add_reverse(address, shortname + '.' + zone))
+        return self._add_history(result)
 
     def add_range(self, name, start_address, number, index=None, force=False):  # pylint: disable=too-many-arguments
         """
@@ -157,7 +163,32 @@ class ManageDNS(ModifyDNS):
                                                                    number, index):
             result.append(self.add_forward(current_name, current_address))
             result.append(self.add_reverse(current_address, current_name + '.' + zone))
-        return result
+        return self._add_history(result)
+
+    def delete_range_by_name(self, name, number, index=None):
+        """
+        Deletes records (A + PTR) based on a range of indexable names.
+        """
+        if not index:
+            shortname, zone, index = self.__get_name_zone_and_index(name)
+        else:
+            shortname, zone = self._get_name_and_zone(name)
+        result = []
+        bogus_address = '10.1.1.1'  # We won't use the address, but iterator wants it
+        for current_name, _ in self.__range_iterator(shortname, bogus_address, number, index):
+            result.append(self.__delete_or_raise(current_name + '.' + zone, None, True))
+        return self._add_history(result)
+
+    def delete_range_by_address(self, address, number):
+        """
+        Deletes records (PTR + A) based on a range of IPs.
+        """
+        bogus_name = 'notused'
+        bogus_index = '001'
+        result = []
+        for _, current_address in self.__range_iterator(bogus_name, address, number, bogus_index):
+            result.append(self.__delete_or_raise(None, current_address, True))
+        return self._add_history(result)
 
 
 def main():  # pylint: disable=too-many-locals
@@ -165,14 +196,21 @@ def main():  # pylint: disable=too-many-locals
     ManageDNS
 
     Usage:
+    managedns.py add [--debug <dfile>] [--server <server>] [--key <kfile>] [--fzone <fzone>]
+                     [--rzone <rzone>] [--force] <name> <address>
+    managedns.py delete [--debug <dfile>] [--server <server>] [--key <kfile>]
+                        [--fzone <fzone>] [--rzone <rzone>] <name_or_address>
     managedns.py add_range [--debug <dfile>] [--server <server>] [--key <kfile>] [--fzone <fzone>]
-                           [--rzone <rzone>] [--force] <start_name> <start_address> <num> [<index>]
+                           [--rzone <rzone>] [--force] <name> <address> <num> [<index>]
+    managedns.py delete_range [--debug <dfile>] [--server <server>] [--key <kfile>]
+                           [--fzone <fzone>] [--rzone <rzone>] <name_or_address> <num> [<index>]
     managedns.py -h|--help
 
     Arguments:
-        start_name     FQDN or shortname for first entry
-        start_address  IP address for first entry
-        num            Number of entries to create
+        name             FQDN or shortname (first entry if adding a range)
+        address          IP address (first entry if adding a range)
+        num              Number of entries to create
+        name_or_address  Either FQDN, shortname, or IP address
 
     Options:
         -h --help        Show this screen
@@ -182,7 +220,7 @@ def main():  # pylint: disable=too-many-locals
         --fzone <fzone>    The forward zone, if not obtainable from entry name
         --rzone <rzone>    The reverse zone, if not matching default from IP
         --force            Delete existing entries before adding new ones
-        index              If not including in the start name, specify the index -
+        index              If not included in the start name, specify the index -
                            the starting value and number of digits to pad.
     """
     arguments = docopt(str(main.__doc__))
@@ -214,8 +252,10 @@ def main():  # pylint: disable=too-many-locals
                     'key_hash': key_hash,
                     'ttl': 3000}
     my_manager = ManageDNS(**my_arguments)
-    results = my_manager.add_range(start_name, start_address, number, start_index, force)
-    print(results)
+    if arguments['add_range']:
+        results = my_manager.add_range(start_name, start_address, number, start_index, force)
+    for res in results:
+        print(res)
 
 if __name__ == "__main__":
     from docopt import docopt
