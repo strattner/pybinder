@@ -144,6 +144,15 @@ class ManageDNS(ModifyDNS):
         result.append(self.add_reverse(address, shortname + '.' + zone))
         return self._add_history(result)
 
+    def add_alias(self, alias, name, force=False):  # pylint: disable=arguments-differ
+        """
+        Add an alias - performs checking (force) before adding, unlike parent function.
+        """
+        result = []
+        result.extend(self.__delete_or_raise(alias, None, force))
+        result.extend(super().add_alias(alias, name))
+        return self._add_history(result)
+
     def add_range(self, name, start_address, number, index=None, force=False):  # pylint: disable=too-many-arguments
         """
         Index, if given, should be a string, so that the number of required digits (ie, zero
@@ -163,6 +172,30 @@ class ManageDNS(ModifyDNS):
                                                                    number, index):
             result.append(self.add_forward(current_name, current_address))
             result.append(self.add_reverse(current_address, current_name + '.' + zone))
+        return self._add_history(result)
+
+    def delete_record(self, name_or_address):
+        """
+        Rely on __delete_or_raise to get rid of A + PTR, or CNAME records.
+        """
+        result = []
+        try:
+            address = ipaddress.ip_address(name_or_address)
+            result.extend(self.__delete_or_raise(None, address, True))
+        except ValueError:
+            result.extend(self.__delete_or_raise(name_or_address, None, True))
+        return self._add_history(result)
+
+    def delete_range(self, name_or_address, number, index=None):
+        """
+        Determine whether name or IP was provided and call appropriate delete_range_by function.
+        """
+        result = []
+        try:
+            address = ipaddress.ip_address(name_or_address)
+            result.extend(self.delete_range_by_address(address, number))
+        except ValueError:
+            result.extend(self.delete_range_by_name(name_or_address, number, index))
         return self._add_history(result)
 
     def delete_range_by_name(self, name, number, index=None):
@@ -197,9 +230,11 @@ def main():  # pylint: disable=too-many-locals
 
     Usage:
     managedns.py add [--debug <dfile>] [--server <server>] [--key <kfile>] [--fzone <fzone>]
-                     [--rzone <rzone>] [--force] <name> <address>
+                     [--rzone <rzone>] [--force] <name> <address>...
     managedns.py delete [--debug <dfile>] [--server <server>] [--key <kfile>]
                         [--fzone <fzone>] [--rzone <rzone>] <name_or_address>
+    managedns.py add_alias [--debug <dfile>] [--server <server>] [--key <kfile>]
+                           [--fzone <fzone>] <alias> <name>
     managedns.py add_range [--debug <dfile>] [--server <server>] [--key <kfile>] [--fzone <fzone>]
                            [--rzone <rzone>] [--force] <name> <address> <num> [<index>]
     managedns.py delete_range [--debug <dfile>] [--server <server>] [--key <kfile>]
@@ -209,6 +244,7 @@ def main():  # pylint: disable=too-many-locals
     Arguments:
         name             FQDN or shortname (first entry if adding a range)
         address          IP address (first entry if adding a range)
+        alias            Alias entry (CNAME)
         num              Number of entries to create
         name_or_address  Either FQDN, shortname, or IP address
 
@@ -237,8 +273,10 @@ def main():  # pylint: disable=too-many-locals
     rzone = arguments['--rzone'] if '--rzone' in arguments else None
     server = arguments['--server'] if '--server' in arguments else None
     force = arguments['--force']
-    start_name = arguments['<start_name>']
-    start_address = arguments['<start_address>']
+    name = arguments['<name>']
+    address = arguments['<address>']
+    name_or_address = arguments['<name_or_address>']
+    alias = arguments['<alias>']
     number = arguments['<num>']
     start_index = arguments['<index>'] if '<index>' in arguments else None
     if arguments['--key']:
@@ -253,7 +291,17 @@ def main():  # pylint: disable=too-many-locals
                     'ttl': 3000}
     my_manager = ManageDNS(**my_arguments)
     if arguments['add_range']:
-        results = my_manager.add_range(start_name, start_address, number, start_index, force)
+        address = address.pop(0)
+        results = my_manager.add_range(name, address, number, start_index, force)
+    elif arguments['add_alias']:
+        results = my_manager.add_alias(alias, name, force)
+    elif arguments['add']:
+        results = my_manager.add_record(name, address, force)
+    elif arguments['delete_range']:
+        address = address.pop(0)
+        results = my_manager.delete_range(name_or_address, number, start_index)
+    elif arguments['delete']:
+        results = my_manager.delete_record(name_or_address)
     for res in results:
         print(res)
 
