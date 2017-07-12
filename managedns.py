@@ -154,8 +154,11 @@ class ManageDNS(ModifyDNS):
         result = []
         if isinstance(address, str):
             address = [address]
+        # Need to separately loop to check for existence,
+        # or round-robin entries will fail after first record is added
         for addr in address:
             result.extend(self.__delete_or_raise(shortname + '.' + zone, addr, force))
+        for addr in address:
             result.extend(self.add_forward(name, addr))
             result.append(self.add_reverse(addr, shortname + '.' + zone))
         return self._add_history(result)
