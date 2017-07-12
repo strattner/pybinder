@@ -15,7 +15,7 @@ Required modules (\* - part of standard library)
 Will perform a search of one or more records (by name or IP), to the nameserver specified (or use system default).
 ```
 ./searchdns.py --help
-    SearchDNS.
+    SearchDNS
 
     Usage:
            searchdns.py [--server <server>] [--domain <domain>] [--debug <file>] <query>...
@@ -32,7 +32,7 @@ Will perform a search of one or more records (by name or IP), to the nameserver 
 ```
 
 ## modifydns.py
-Will perform modification of DNS, with no validation (checking if entry already exists).
+Will perform modification of DNS, with no validation (does not check if entry already exists).
 ```
 ./modifydns.py --help
     ModifyDNS
@@ -68,7 +68,7 @@ Will perform modification of DNS, with no validation (checking if entry already 
 ## managedns.py
 Provides validation and additional modification functions (range).
 ```
-$ ./managedns.py --help
+./managedns.py --help
     ManageDNS
 
     Usage:

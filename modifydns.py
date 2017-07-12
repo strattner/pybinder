@@ -137,7 +137,7 @@ class ModifyDNS(object):
             # is at the "class C" aka /24 boundary
             try:
                 network_address = ipaddress.ip_network(address + '/24', False)
-                logging.debug("Found network address %s for reverse zone calculation", str(network_address))
+                logging.debug("Using %s for reverse zone calculation", str(network_address))
                 rev_network_addr = str(
                     dns.reversename.from_address(str(network_address.network_address)))
                 last_octet_index = rev_network_addr.find('.')
@@ -230,7 +230,8 @@ class ModifyDNS(object):
         if not name:
             existing = self.reverse_search.query(address)
             if existing.type == DNSSearchAnswer.NOT_FOUND:
-                request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.PTR, address, None)
+                request = DNSModifyRequest(DNSModifyRequest.DELETE,
+                                           dns.rdatatype.PTR, address, None)
                 return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
             name = existing.name
         request = DNSModifyRequest(DNSModifyRequest.DELETE,

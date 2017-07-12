@@ -84,7 +84,7 @@ class ManageDNS(ModifyDNS):
         for inc in range(int(number)):
             current_name = name + str(starting_index + inc).zfill(index_padding)
             current_address = starting_address + inc
-            logging.debug("Iterator: generating name %s and address %s", current_name, current_address)
+            logging.debug("Iterator: generating record  %s %s", current_name, current_address)
             yield (current_name, str(current_address))
 
     @staticmethod
@@ -152,7 +152,7 @@ class ManageDNS(ModifyDNS):
         """
         shortname, zone = self._get_name_and_zone(name)
         result = []
-        if isinstance(address,str):
+        if isinstance(address, str):
             address = [address]
         for addr in address:
             result.extend(self.__delete_or_raise(shortname + '.' + zone, addr, force))
@@ -179,7 +179,7 @@ class ManageDNS(ModifyDNS):
         """
         if not index:
             shortname, zone, index = self.__get_name_zone_and_index(name)
-            logging.debug("Extracted shortname %s and index %s from name %s", shortname, index, name)
+            logging.debug("Got shortname %s and index %s from name %s", shortname, index, name)
         else:
             shortname, zone = self._get_name_and_zone(name)
         result = []
