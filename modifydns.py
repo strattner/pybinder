@@ -130,14 +130,16 @@ class ModifyDNS(object):
         return (shortname, zone)
 
     def __get_rev_name_and_zone(self, address):
+        logging.debug("Address %s type is %s", address, address.__class__)
         zone = self.reverse_zone
         revname = dns.reversename.from_address(address)
         if not zone:  # Without a given reverse zone, the assumption is that the zone
             # is at the "class C" aka /24 boundary
             try:
-                network_address = ipaddress.ip_network(address + '/24')
+                network_address = ipaddress.ip_network(address + '/24', False)
+                logging.debug("Found network address %s for reverse zone calculation", str(network_address))
                 rev_network_addr = str(
-                    dns.reversename.from_address(str(network_address)))
+                    dns.reversename.from_address(str(network_address.network_address)))
                 last_octet_index = rev_network_addr.find('.')
                 zone = rev_network_addr[last_octet_index:]
             except ValueError:
@@ -201,16 +203,18 @@ class ModifyDNS(object):
         logging.debug("Adding alias record result: %s", result)
         return DNSModifyAnswer(request, result.rcode())
 
-    def delete_forward(self, name):
+    def delete_forward(self, name, addr=None):
         """
-        Delete an A record. This will also remove all round-robin entries for that name.
+        Delete an A record. If 'addr' is not provided, the record will be searched for.
         """
-        existing = self.forward_search.query(name)
-        if existing.type == DNSSearchAnswer.NOT_FOUND:
-            request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.A, name, None)
-            return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
-        request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.A, name, existing.addr)
-        logging.debug("Forward delete request for %s with existing value %s", name, existing.addr)
+        if not addr:
+            existing = self.forward_search.query(name)
+            if existing.type == DNSSearchAnswer.NOT_FOUND:
+                request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.A, name, None)
+                return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
+            addr = existing.addr
+        request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.A, name, addr)
+        logging.debug("Forward delete request for %s with existing value %s", name, addr)
         shortname, zone = self._get_name_and_zone(name)
         update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(shortname, dns.rdatatype.A)
@@ -218,18 +222,21 @@ class ModifyDNS(object):
         logging.debug("Deleting forward record result: %s", result)
         return DNSModifyAnswer(request, result.rcode())
 
-    def delete_reverse(self, address):
+    def delete_reverse(self, address, name=None):
         """
-        Delete a PTR record.
+        Delete a PTR record. If 'name' is not provided, the record will be searched for.
         """
-        existing = self.reverse_search.query(address)
-        if existing.type == DNSSearchAnswer.NOT_FOUND:
-            request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.PTR, address, None)
-            return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
+        logging.debug("Address %s type is %s", address, address.__class__)
+        if not name:
+            existing = self.reverse_search.query(address)
+            if existing.type == DNSSearchAnswer.NOT_FOUND:
+                request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.PTR, address, None)
+                return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
+            name = existing.name
         request = DNSModifyRequest(DNSModifyRequest.DELETE,
-                                   dns.rdatatype.PTR, address, existing.name)
+                                   dns.rdatatype.PTR, address, name)
         logging.debug("Reverse delete request for %s with existing value %s",
-                      address, existing.name)
+                      address, name)
         reverse_name, zone = self.__get_rev_name_and_zone(address)
         update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(reverse_name, dns.rdatatype.PTR)
@@ -237,18 +244,21 @@ class ModifyDNS(object):
         logging.debug("Deleting reverse record result: %s", result)
         return DNSModifyAnswer(request, result.rcode())
 
-    def delete_alias(self, alias):
+    def delete_alias(self, alias, real_name=None):
         """
-        Delete a CNAME record
+        Delete a CNAME record. If 'real_name' is not provided, the record will be searched for.
         """
-        existing = self.forward_search.query(alias, SearchDNS.ALIAS)
-        if existing.type == DNSSearchAnswer.NOT_FOUND:
-            request = DNSModifyRequest(DNSModifyRequest.DELETE, dns.rdatatype.CNAME, alias, None)
-            return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
+        if not real_name:
+            existing = self.forward_search.query(alias, SearchDNS.ALIAS)
+            if existing.type == DNSSearchAnswer.NOT_FOUND:
+                request = DNSModifyRequest(DNSModifyRequest.DELETE,
+                                           dns.rdatatype.CNAME, alias, None)
+                return DNSModifyAnswer(request, DNSModifyAnswer.CANCEL_REQUEST)
+            real_name = existing.real_name
         request = DNSModifyRequest(DNSModifyRequest.DELETE,
-                                   dns.rdatatype.CNAME, alias, existing.real_name)
+                                   dns.rdatatype.CNAME, alias, real_name)
         logging.debug("Alias delete request for %s with existing value %s",
-                      alias, existing.real_name)
+                      alias, real_name)
         shortname, zone = self._get_name_and_zone(alias)
         update = dns.update.Update(zone, keyring=self.keyring)
         update.delete(shortname, dns.rdatatype.CNAME)

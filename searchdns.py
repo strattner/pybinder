@@ -74,7 +74,7 @@ class DNSSearchAnswer(object):  # pylint: disable=too-few-public-methods
     def __str__(self):
         if self.type == DNSSearchAnswer.NOT_FOUND:
             return self.entry + " " + self.type
-        return_string = self.entry + " "
+        return_string = str(self.entry) + " "
         if self.type == DNSSearchAnswer.ALIAS:
             return_string += "(alias for) " + self.real_name
         if self.type == DNSSearchAnswer.ROUND_ROBIN:
@@ -123,7 +123,7 @@ class SearchDNS(object):
         if not search_type:
             if SearchDNS.is_address(entry):
                 search_type = SearchDNS.REVERSE
-                search_entry = dns.reversename.from_address(entry)
+                search_entry = dns.reversename.from_address(str(entry))
             else:
                 search_type = SearchDNS.FORWARD
         try:
