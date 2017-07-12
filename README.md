@@ -6,7 +6,7 @@ Built and tested using Python 3.5.2
 Required modules (\* - part of standard library)
 
 [dnspython](http://www.dnspython.org/)  *Does the heavy lifting in interacting with BIND*   
-[docopt](https://github.com/docopt/docopt)  *Creates command line parser out of the program's comments; only needed if calling program directly*   
+[docopt](https://github.com/docopt/docopt)  *Creates command line parser out of the program's comments*   
 \* [ipaddress](https://docs.python.org/3/library/ipaddress.html)    
 \* [logging](https://docs.python.org/3/library/logging.html)   
 \* [re](https://docs.python.org/3/library/re.html)   
@@ -68,18 +68,28 @@ Will perform modification of DNS, with no validation (checking if entry already 
 ## managedns.py
 Provides validation and additional modification functions (range).
 ```
-./managedns.py --help
+$ ./managedns.py --help
     ManageDNS
 
     Usage:
+    managedns.py add [--debug <dfile>] [--server <server>] [--key <kfile>] [--fzone <fzone>]
+                     [--rzone <rzone>] [--force] <name> <address>...
+    managedns.py delete [--debug <dfile>] [--server <server>] [--key <kfile>]
+                        [--fzone <fzone>] [--rzone <rzone>] <name_or_address>
+    managedns.py add_alias [--debug <dfile>] [--server <server>] [--key <kfile>]
+                           [--fzone <fzone>] [--force] <alias> <name>
     managedns.py add_range [--debug <dfile>] [--server <server>] [--key <kfile>] [--fzone <fzone>]
-                           [--rzone <rzone>] [--force] <start_name> <start_address> <num> [<index>]
+                           [--rzone <rzone>] [--force] <name> <address> <num> [<index>]
+    managedns.py delete_range [--debug <dfile>] [--server <server>] [--key <kfile>]
+                           [--fzone <fzone>] [--rzone <rzone>] <name_or_address> <num> [<index>]
     managedns.py -h|--help
 
     Arguments:
-        start_name     FQDN or shortname for first entry
-        start_address  IP address for first entry
-        num            Number of entries to create
+        name             FQDN or shortname (first entry if adding a range)
+        address          IP address (first entry if adding a range)
+        alias            Alias entry (CNAME)
+        num              Number of entries to create
+        name_or_address  Either FQDN, shortname, or IP address
 
     Options:
         -h --help        Show this screen
@@ -89,6 +99,6 @@ Provides validation and additional modification functions (range).
         --fzone <fzone>    The forward zone, if not obtainable from entry name
         --rzone <rzone>    The reverse zone, if not matching default from IP
         --force            Delete existing entries before adding new ones
-        index              If not including in the start name, specify the index -
+        index              If not included in the start name, specify the index -
                            the starting value and number of digits to pad.
 ```
