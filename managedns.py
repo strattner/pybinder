@@ -52,6 +52,14 @@ class ManageDNS(ModifyDNS):
             self.__class__.history[self.user].append(result)
         return result
 
+    def get_history(self):
+        """
+        Return all modification events for the user associated with this instance.
+        """
+        if self.user:
+            return self.__class__.history[self.user]
+        return None
+
     def __get_name_zone_and_index(self, name):
         """
         Returns a three value tuple of the shortname, zone (if found), and the
