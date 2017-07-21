@@ -65,6 +65,14 @@ class ManageDNS(ModifyDNS):
             return self.__class__.history[self.user]
         return None
 
+    def clear_history(self):
+        """
+        Clears user history.
+        """
+        if self.user:
+            self.__class__.history[self.user] = []
+        return None
+
     def __get_name_zone_and_index(self, name):
         """
         Returns a three value tuple of the shortname, zone (if found), and the
