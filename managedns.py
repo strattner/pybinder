@@ -48,8 +48,13 @@ class ManageDNS(ModifyDNS):
             self.__class__.history[self.user] = []
 
     def _add_history(self, result):
+        """
+        Add history of actions. Remove status (": completed successfully") as it's
+        redundant at this point - only successful actions will be entered into history.
+        """
+        short_result = [x.request for x in result]
         if self.user:
-            self.__class__.history[self.user].append(result)
+            self.__class__.history[self.user].append(short_result)
         return result
 
     def get_history(self):
