@@ -158,13 +158,17 @@ class ManageDNS(ModifyDNS):
                 results.append(self.delete_alias(name, entry.real_name))
         return results
 
-    def __delete_or_raise_range(self, name, ip_address, number, index, force=False):  # pylint: disable=too-many-arguments
+    def __delete_or_raise_range(self, name, ip_address, number, index, force=False, zone=None):  # pylint: disable=too-many-arguments
         """
         """
         results = []
         for current_name, current_ip in self.__range_iterator(name, ip_address, number, index):
-            logging.debug("Checking %s %s for deletion", current_name, current_ip)
-            results.extend(self.__delete_or_raise(current_name, current_ip, force))
+            if zone:
+                full_name = current_name + '.' + zone
+            else:
+                full_name = current_name
+            logging.debug("Checking %s %s for deletion", full_name, current_ip)
+            results.extend(self.__delete_or_raise(full_name, current_ip, force))
         return results
 
     def add_record(self, name, address, force=False):
@@ -208,11 +212,12 @@ class ManageDNS(ModifyDNS):
             shortname, zone = self._get_name_and_zone(name)
         result = []
         result.extend(self.__delete_or_raise_range(shortname,
-                                                   start_address, number, index, force))
+                                                   start_address, number, index, force, zone))
         for current_name, current_address in self.__range_iterator(shortname, start_address,
                                                                    number, index):
-            result.extend(self.add_forward(current_name, current_address))
-            result.append(self.add_reverse(current_address, current_name + '.' + zone))
+            full_name = current_name + '.' + zone
+            result.extend(self.add_forward(full_name, current_address))
+            result.append(self.add_reverse(current_address, full_name))
         return self._add_history(result)
 
     def delete_record(self, name_or_address):
@@ -250,8 +255,9 @@ class ManageDNS(ModifyDNS):
         result = []
         bogus_address = '10.1.1.1'  # We won't use the address, but iterator wants it
         for current_name, _ in self.__range_iterator(shortname, bogus_address, number, index):
-            logging.debug("Request to delete or raise %s", current_name)
-            result.extend(self.__delete_or_raise(current_name + '.' + zone, None, True))
+            full_name = current_name + '.' + zone
+            logging.debug("Request to delete or raise %s", full_name)
+            result.extend(self.__delete_or_raise(full_name, None, True))
         return self._add_history(result)
 
     def delete_range_by_address(self, address, number):
