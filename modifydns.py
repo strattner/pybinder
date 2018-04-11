@@ -132,16 +132,15 @@ class ModifyDNS(object):
     def __get_rev_name_and_zone(self, address):
         logging.debug("Address %s type is %s", address, address.__class__)
         zone = self.reverse_zone
-        revname = dns.reversename.from_address(address)
+        revname = str(dns.reversename.from_address(address))
         if not zone:  # Without a given reverse zone, the assumption is that the zone
             # is at the "class C" aka /24 boundary
             try:
                 network_address = ipaddress.ip_network(address + '/24', False)
                 logging.debug("Using %s for reverse zone calculation", str(network_address))
-                rev_network_addr = str(
-                    dns.reversename.from_address(str(network_address.network_address)))
-                last_octet_index = rev_network_addr.find('.')
-                zone = rev_network_addr[last_octet_index:]
+                last_octet_index = revname.find('.')
+                zone = revname[(last_octet_index + 1):].rstrip('.')
+                logging.debug("Reverse zone to use:", zone)
             except ValueError:
                 logging.debug("Unable to find reverse zone for %s", address)
                 raise DNSModifyError(DNSModifyError.NO_ZONE)
